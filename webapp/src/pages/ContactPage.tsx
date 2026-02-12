@@ -90,18 +90,21 @@ export function ContactPage() {
         </div>
 
         <div className="bg-white rounded-2xl border border-zinc-200 shadow-sm p-8">
-          {success && (
-            <div className="mb-6 rounded-lg border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-700">
-              Thank you. We've received your message and will get back to you soon.
+          {success ? (
+            <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-6 text-center">
+              <p className="text-emerald-800 font-medium">
+                Thank you. We've received your message and will get back to you soon.
+              </p>
             </div>
-          )}
-          {error && (
-            <div className="mb-6 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">
-              {error}
-            </div>
-          )}
+          ) : (
+            <>
+              {error && (
+                <div className="mb-6 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+                  {error}
+                </div>
+              )}
 
-          <form onSubmit={handleSubmit} className="space-y-6">
+              <form onSubmit={handleSubmit} className="space-y-6">
             <div>
               <label htmlFor="name" className="block text-sm font-medium text-zinc-900 mb-2">
                 Name
@@ -217,23 +220,25 @@ export function ContactPage() {
                 We usually respond within 1 business day.
               </p>
             </div>
-          </form>
+              </form>
 
-          <div className="mt-8 pt-8 border-t border-zinc-200">
-            <p className="text-center text-sm text-zinc-600 mb-4">
-              Want to talk sooner?{' '}
-              <a
-                href="#"
-                className="text-[#c23d3d] hover:text-[#e15a3a] font-medium underline"
-                onClick={(e) => {
-                  e.preventDefault()
-                  // TODO: Add calendar scheduling link
-                }}
-              >
-                Schedule a conversation
-              </a>
-            </p>
-          </div>
+              <div className="mt-8 pt-8 border-t border-zinc-200">
+                <p className="text-center text-sm text-zinc-600 mb-4">
+                  Want to talk sooner?{' '}
+                  <a
+                    href="#"
+                    className="text-[#c23d3d] hover:text-[#e15a3a] font-medium underline"
+                    onClick={(e) => {
+                      e.preventDefault()
+                      // TODO: Add calendar scheduling link
+                    }}
+                  >
+                    Schedule a conversation
+                  </a>
+                </p>
+              </div>
+            </>
+          )}
         </div>
       </main>
 
