@@ -3,6 +3,7 @@ import { UserService } from '../../../../domain/user/user.service'
 import { ApiKeyService } from '../../../../domain/api-key/api-key.service'
 import { PaymentService } from '../../../../domain/payment/payment.service'
 import { ValidationError, NotFoundError } from '../../../../shared/errors/app-error'
+import { getRateLimitsForUser } from '../../../../config/rate-limit.config'
 
 interface AuthenticatedRequest extends Request {
   user?: {
@@ -29,6 +30,14 @@ export class UserController {
       }
 
       const user = await this.userService.getUserById(req.user.id)
+      const apiKeys = await this.apiKeyService.getApiKeysByUser(req.user.id)
+      const firstKey = apiKeys[0]
+      const rateLimits = firstKey
+        ? { requestsPerSecond: firstKey.requestsPerSecond, tokensPerMonth: firstKey.tokensPerMonth.toString() }
+        : (() => {
+            const tier = getRateLimitsForUser(user.isVerified, false)
+            return { requestsPerSecond: tier.requestsPerSecond, tokensPerMonth: String(tier.tokensPerMonth) }
+          })()
 
       res.json({
         success: true,
@@ -39,11 +48,13 @@ export class UserController {
             firstName: user.firstName,
             lastName: user.lastName,
             emailVerified: user.emailVerified,
+            isVerified: user.isVerified,
             isActive: user.isActive,
             tokenBalance: user.tokenBalance,
             createdAt: user.createdAt,
             updatedAt: user.updatedAt,
           },
+          rateLimits,
         },
       })
     } catch (error) {
