@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import { Logo } from '../components/common/Logo'
+import { Footer } from '../components/common/Footer'
 
 export function AboutPage() {
   return (
@@ -204,43 +205,7 @@ export function AboutPage() {
         </section>
       </div>
 
-      {/* Footer */}
-      <footer className="bg-white border-t border-zinc-200 mt-20">
-        <div className="mx-auto max-w-7xl px-6 py-12">
-          <div className="flex flex-col md:flex-row justify-between items-start gap-8">
-            <div>
-              <Logo />
-              <p className="mt-4 text-sm text-zinc-600 max-w-md">
-                Building retrieval foundations for the AI era.
-              </p>
-            </div>
-
-            <nav className="flex flex-wrap items-center gap-x-8 gap-y-3 text-sm">
-              <Link to="/" className="text-zinc-600 hover:text-zinc-900 transition-colors">
-                Playground
-              </Link>
-              <Link to="/compare" className="text-zinc-600 hover:text-zinc-900 transition-colors">
-                Compare
-              </Link>
-              <Link to="/docs" className="text-zinc-600 hover:text-zinc-900 transition-colors">
-                Documentation
-              </Link>
-              <Link to="/pricing" className="text-zinc-600 hover:text-zinc-900 transition-colors">
-                Pricing
-              </Link>
-              <Link to="/about" className="text-zinc-600 hover:text-zinc-900 transition-colors">
-                About
-              </Link>
-            </nav>
-          </div>
-
-          <div className="mt-8 border-t border-zinc-200 pt-8">
-            <p className="text-sm text-zinc-500">
-              © {new Date().getFullYear()} CoralBricks. All rights reserved.
-            </p>
-          </div>
-        </div>
-      </footer>
+      <Footer />
     </div>
   )
 }
