@@ -1,0 +1,138 @@
+{%- comment -%}
+  Product Radar - Search Bar (Theme App Extension / OS 2.0 App Block)
+  Renders a storefront search form that submits to Shopify's /search endpoint.
+{%- endcomment -%}
+
+{{ 'app.css' | asset_url | stylesheet_tag }}
+<script src="{{ 'app.js' | asset_url }}" defer></script>
+
+{%- liquid
+  assign heading = block.settings.heading | default: 'Search'
+  assign placeholder = block.settings.placeholder | default: 'Search products...'
+  assign button_label = block.settings.button_label | default: 'Search'
+  assign accent = block.settings.accent_color | default: '#111827'
+  assign show_heading = block.settings.show_heading
+  assign show_button = block.settings.show_button
+-%}
+
+<div
+  class="pradar-search"
+  style="--pradar-accent: {{ accent }};"
+  data-pradar-search
+  data-shop-domain="{{ shop.permanent_domain }}"
+  data-backend-url="{{ block.settings.backend_url | default: 'http://localhost:3000' }}"
+  {{ block.shopify_attributes }}
+>
+  <div class="pradar-search__inner">
+    {%- if show_heading -%}
+      <h2 class="pradar-search__heading">{{ heading | escape }}</h2>
+    {%- endif -%}
+
+    <form class="pradar-search__form" action="{{ routes.search_url }}" method="get" role="search">
+      <label class="pradar-search__label" for="pradar-search-input-{{ block.id }}">
+        {{ 'blocks.main.search_label' | t }}
+      </label>
+
+      <div class="pradar-search__controls" data-pradar-controls>
+        <input
+          id="pradar-search-input-{{ block.id }}"
+          class="pradar-search__input"
+          type="search"
+          name="q"
+          placeholder="{{ placeholder | escape }}"
+          autocomplete="off"
+          required
+          aria-autocomplete="list"
+          aria-expanded="false"
+          aria-haspopup="listbox"
+          aria-controls="pradar-search-suggestions-{{ block.id }}"
+        />
+
+        {%- if show_button -%}
+          <button class="pradar-search__button" type="submit">
+            {{ button_label | escape }}
+          </button>
+        {%- endif -%}
+      </div>
+
+      <div
+        id="pradar-search-suggestions-{{ block.id }}"
+        class="pradar-search__suggestions"
+        role="listbox"
+        aria-label="Search suggestions"
+        hidden
+      ></div>
+
+      {%- comment -%} Results container for full search results {%- endcomment -%}
+      <div
+        id="pradar-search-results-{{ block.id }}"
+        class="pradar-search__results"
+        hidden
+      ></div>
+
+      {%- comment -%} Loading indicator {%- endcomment -%}
+      <div
+        id="pradar-search-loading-{{ block.id }}"
+        class="pradar-search__loading"
+        hidden
+      >
+        <div class="pradar-search__loading-spinner">Loading...</div>
+      </div>
+
+      {%- comment -%} Optional: if your theme supports it, you can add hidden fields like type/product, etc. {%- endcomment -%}
+    </form>
+  </div>
+</div>
+
+{% schema %}
+{
+  "name": "Product Radar Search",
+  "target": "section",
+  "settings": [
+    {
+      "type": "checkbox",
+      "id": "show_heading",
+      "label": "Show heading",
+      "default": true
+    },
+    {
+      "type": "text",
+      "id": "heading",
+      "label": "Heading",
+      "default": "Search"
+    },
+    {
+      "type": "text",
+      "id": "placeholder",
+      "label": "Placeholder",
+      "default": "Search products..."
+    },
+    {
+      "type": "text",
+      "id": "button_label",
+      "label": "Button label",
+      "default": "Search"
+    },
+    {
+      "type": "color",
+      "id": "accent_color",
+      "label": "Accent color",
+      "default": "#111827"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_button",
+      "label": "Show button",
+      "default": true
+    },
+    {
+      "type": "text",
+      "id": "backend_url",
+      "label": "Backend API URL",
+      "info": "Your OpenSearch backend API URL (e.g., https://api.yourdomain.com or http://localhost:3000)",
+      "default": "http://localhost:3000"
+    }
+  ]
+}
+{% endschema %}
+

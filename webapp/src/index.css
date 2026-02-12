@@ -1,0 +1,28 @@
+@import "tailwindcss";
+
+/* App-level defaults */
+html,
+body,
+#root {
+  height: 100%;
+}
+
+/* Site-wide background */
+body {
+  background-color: #fdf4f4;
+}
+
+/* Slightly nicer scrollbars (Chromium) */
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+*::-webkit-scrollbar-thumb {
+  background: #2f2f2f;
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+*::-webkit-scrollbar-track {
+  background: transparent;
+}

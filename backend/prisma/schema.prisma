@@ -1,0 +1,297 @@
+generator client {
+  provider   = "prisma-client"
+  output     = "./generated"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// User Management for Marketplace API
+model User {
+  id          Int       @id @default(autoincrement())
+  email       String    @unique
+  passwordHash String?  // Null for OAuth-only users
+  
+  // OAuth Integration
+  googleId    String?   @unique
+  awsId       String?   @unique
+  
+  // Profile Info
+  firstName   String?
+  lastName    String?
+  
+  // Status
+  isActive    Boolean   @default(true)
+  emailVerified Boolean @default(false)
+  
+  // Email Verification for Try API Flow
+  isVerified  Boolean   @default(false) // True after user completes email verification
+  verificationToken String? @unique // Token sent in verification email
+  verificationTokenExpiry DateTime? // Expiry time for verification token
+  
+  // Password Reset
+  passwordResetToken String? @unique // Token sent in password reset email
+  passwordResetTokenExpiry DateTime? // Expiry time for password reset token
+  
+  // Account-level Token Balance (freemium model)
+  tokenBalance BigInt   @default(100000000) // Free tier: 100,000,000 tokens (100M) - BigInt to support large balances
+  
+  // Stripe Integration
+  stripeCustomerId String? @unique // Stripe Customer ID for payment methods
+  
+  // Monthly Budget Settings
+  monthlyBudgetLimit Decimal? // Monthly spending limit in USD (null = unlimited)
+  
+  // Relations
+  apiKeys     ApiKey[]
+  usage       ApiUsage[]
+  transactions CreditTransaction[]
+  
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@map("users")
+}
+
+model ApiKey {
+  id          Int       @id @default(autoincrement())
+  userId      Int
+  
+  // Key Info
+  name        String    // User-defined name like "My App Key"
+  keyHash     String    @unique // Hashed version of the actual key (for validation)
+  encryptedKey String?  // Encrypted full API key (AES-256-GCM) - nullable for backward compatibility
+  keyPrefix   String    // First 8 chars for display (e.g., "ak_12345...")
+  
+  // Status & Usage Tracking (no limits - account-level limits apply)
+  isActive    Boolean   @default(true)
+  usageCount  Int       @default(0) // Track API calls for analytics
+  
+  // Rate Limits (for Try API flow)
+  requestsPerSecond   Int      @default(5) // API calls per second
+  tokensPerMonth      BigInt   @default(10000) // Tokens allowed per month
+  tokensUsedThisMonth BigInt   @default(0) // Tokens used in current month
+  monthResetDate      DateTime @default(now()) // When monthly token count resets
+  
+  // Expiration
+  expiresAt   DateTime?
+  lastUsedAt  DateTime?
+  
+  // Relations
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  usage       ApiUsage[]
+  
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([userId])
+  @@index([keyHash])
+  @@map("api_keys")
+}
+
+model ApiUsage {
+  id          Int       @id @default(autoincrement())
+  userId      Int
+  apiKeyId    Int
+  
+  // Request Info
+  endpoint    String    // "/api/v1/embed", "/api/v1/count-tokens"
+  method      String    // "POST"
+  
+  // Usage Metrics
+  tokensUsed  Int       @default(0)
+  latencyMs   Int?
+  
+  // Request Details
+  inputSize   Int?      // Length of input text
+  outputSize  Int?      // Size of response
+  
+  // Status
+  success     Boolean   @default(true)
+  errorCode   String?
+  
+  // Relations
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  apiKey      ApiKey    @relation(fields: [apiKeyId], references: [id], onDelete: Cascade)
+  
+  timestamp   DateTime  @default(now())
+
+  @@index([userId])
+  @@index([apiKeyId])
+  @@index([timestamp])
+  @@index([endpoint])
+  @@map("api_usage")
+}
+
+// Billing & Credit Purchase Models
+model CreditTransaction {
+  id          Int       @id @default(autoincrement())
+  userId      Int
+  
+  // Transaction Details
+  type        String    // "purchase", "free_tier", "refund"
+  amount      BigInt    // Tokens purchased/added (BigInt to support large token amounts)
+  cost        Decimal?  // Cost in USD (null for free tier)
+  currency    String    @default("USD")
+  
+  // Payment Info (for purchases)
+  paymentProvider String? // "stripe", "paypal", etc.
+  paymentId      String? // External payment ID
+  paymentStatus  String? // "pending", "completed", "failed", "refunded"
+  
+  // Metadata
+  description String?   // Human-readable description
+  metadata    Json?     // Additional data (JSON)
+  
+  // Relations
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([userId])
+  @@index([type])
+  @@index([paymentStatus])
+  @@index([createdAt])
+  @@map("credit_transactions")
+}
+
+// Existing Shopify Models (keeping them)
+model ShopifyShop {
+  id          Int                 @id @default(autoincrement())
+  shopDomain  String              @unique
+  accessToken String
+  isActive    Boolean             @default(true)
+  installedAt DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+  products    ShopifyProduct[]
+
+  @@map("shopify_shops")
+}
+
+model ShopifyProduct {
+  id                  Int                    @id @default(autoincrement())
+  shopifyProductId    String
+  shopId              Int
+  
+  // Basic Info
+  title               String
+  description         String?                @db.Text
+  vendor              String?
+  productType         String?
+  handle              String
+  status              String                 @default("active")
+  
+  // Shopify Timestamps
+  publishedAt         DateTime?
+  shopifyCreatedAt    DateTime?
+  shopifyUpdatedAt    DateTime?
+  
+  // SEO & Organization
+  tags                String?                // Comma-separated tags
+  
+  // Relations
+  shop                ShopifyShop            @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  variants            ShopifyProductVariant[]
+  images              ShopifyProductImage[]
+  options             ShopifyProductOption[]
+  
+  // Our Timestamps
+  createdAt           DateTime               @default(now())
+  updatedAt           DateTime               @updatedAt
+
+  @@unique([shopId, shopifyProductId])
+  @@index([shopId])
+  @@index([shopifyProductId])
+  @@index([status])
+  @@index([vendor])
+  @@index([productType])
+  @@map("shopify_products")
+}
+
+model ShopifyProductVariant {
+  id                  Int            @id @default(autoincrement())
+  shopifyVariantId    String
+  productId           Int
+  
+  // Variant Info
+  title               String
+  sku                 String?
+  barcode             String?
+  
+  // Pricing
+  price               String
+  compareAtPrice      String?
+  
+  // Inventory
+  inventoryQuantity   Int?
+  inventoryPolicy     String?        // "deny" or "continue"
+  
+  // Physical Properties
+  weight              Float?
+  weightUnit          String?        // "g", "kg", "oz", "lb"
+  
+  // Variant Position
+  position            Int            @default(1)
+  
+  // Fulfillment
+  requiresShipping    Boolean        @default(true)
+  taxable             Boolean        @default(true)
+  
+  // Relation
+  product             ShopifyProduct @relation(fields: [productId], references: [id], onDelete: Cascade)
+  
+  createdAt           DateTime       @default(now())
+  updatedAt           DateTime       @updatedAt
+
+  @@unique([productId, shopifyVariantId])
+  @@index([productId])
+  @@index([sku])
+  @@index([barcode])
+  @@map("shopify_product_variants")
+}
+
+model ShopifyProductImage {
+  id               Int            @id @default(autoincrement())
+  shopifyImageId   String
+  productId        Int
+  
+  // Image Data
+  src              String
+  alt              String?
+  position         Int            @default(1)
+  width            Int?
+  height           Int?
+  
+  // Relation
+  product          ShopifyProduct @relation(fields: [productId], references: [id], onDelete: Cascade)
+  
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+
+  @@unique([productId, shopifyImageId])
+  @@index([productId])
+  @@map("shopify_product_images")
+}
+
+model ShopifyProductOption {
+  id               Int            @id @default(autoincrement())
+  shopifyOptionId  String
+  productId        Int
+  
+  // Option Data
+  name             String         // "Size", "Color", "Material"
+  position         Int            @default(1)
+  values           String         // JSON array: ["Small", "Medium", "Large"]
+  
+  // Relation
+  product          ShopifyProduct @relation(fields: [productId], references: [id], onDelete: Cascade)
+  
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+
+  @@unique([productId, shopifyOptionId])
+  @@index([productId])
+  @@map("shopify_product_options")
+}
