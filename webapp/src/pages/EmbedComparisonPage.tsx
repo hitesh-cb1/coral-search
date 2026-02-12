@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { Logo } from '../components/common/Logo'
+import { Footer } from '../components/common/Footer'
 import { hasJwtToken } from '../lib/tokenStorage'
 import { endpoints } from '../config/endpoints'
 
@@ -578,6 +579,8 @@ export function EmbedComparisonPage() {
           </div>
         )}
       </div>
+
+      <Footer />
     </div>
   )
 }
