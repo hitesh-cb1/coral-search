@@ -9,7 +9,7 @@ import {
 } from '../../../domain/api-key/api-key.types'
 import { ApiKeyMapper } from '../mappers/api-key.mapper'
 import { apiKeyConfig } from '../../../config/api-key.config'
-import { rateLimitConfig } from '../../../config/rate-limit.config'
+import { getRateLimitsForUser, rateLimitConfig } from '../../../config/rate-limit.config'
 
 export class PostgresApiKeyRepository implements IApiKeyRepository {
   private prisma = getPrismaClient()
@@ -19,10 +19,21 @@ export class PostgresApiKeyRepository implements IApiKeyRepository {
     const now = new Date()
     const monthResetDate = new Date(now.getFullYear(), now.getMonth() + 1, 1)
 
-    // Use unverified tier limits by default (config provides initial values)
-    // Note: Database is the single source of truth for rate limits
-    // These values can be updated when user status changes or by admin override
-    const limits = rateLimitConfig.unverified
+    // Use the user's current tier (unverified / verified / paid) so new keys get the same limits as existing ones
+    const user = await this.prisma.user.findUnique({
+      where: { id: input.userId },
+      select: { isVerified: true, emailVerified: true }
+    })
+    const isVerified = user ? (user.isVerified || user.emailVerified) : false
+    const paidTxCount = await this.prisma.creditTransaction.count({
+      where: {
+        userId: input.userId,
+        type: 'purchase',
+        paymentStatus: 'completed'
+      }
+    })
+    const hasPaid = paidTxCount > 0
+    const limits = getRateLimitsForUser(isVerified, hasPaid)
 
     const prismaApiKey = await this.prisma.apiKey.create({
       data: {
