@@ -14,6 +14,7 @@ interface User {
   isActive: boolean
   tokenBalance: string
   stripeCustomerId: string | null
+  dailyBudgetLimit: string | null
   googleId: string | null
   awsId: string | null
   apiKeyCount: number
@@ -307,6 +308,9 @@ export function AdminDashboard() {
                         Transactions
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-zinc-700 uppercase tracking-wider">
+                        Daily Budget
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-zinc-700 uppercase tracking-wider">
                         Stripe Customer
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-zinc-700 uppercase tracking-wider">
@@ -335,7 +339,7 @@ export function AdminDashboard() {
                   <tbody className="bg-white divide-y divide-zinc-200">
                     {filteredUsers.length === 0 ? (
                       <tr>
-                        <td colSpan={15} className="px-6 py-12 text-center text-sm text-zinc-500">
+                        <td colSpan={16} className="px-6 py-12 text-center text-sm text-zinc-500">
                           {users.length === 0 ? 'No users found' : 'No users match the current filter'}
                         </td>
                       </tr>
@@ -389,6 +393,13 @@ export function AdminDashboard() {
                               <div className="text-xs text-zinc-500 mt-1">
                                 Last: {formatDate(user.lastTransaction)}
                               </div>
+                            )}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-zinc-900">
+                            {user.dailyBudgetLimit ? (
+                              <span className="font-medium">${parseFloat(user.dailyBudgetLimit).toFixed(2)}</span>
+                            ) : (
+                              <span className="text-zinc-400">Unlimited</span>
                             )}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-zinc-600">

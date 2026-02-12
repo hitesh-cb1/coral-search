@@ -476,34 +476,50 @@ export class UserController {
         return
       }
 
-      // Get budget limit from user
-      const limit = await this.userService.getMonthlyBudgetLimit(req.user.id)
-      
-      // Calculate current spend from completed transactions this month
+      const [monthlyLimit, dailyLimit] = await Promise.all([
+        this.userService.getMonthlyBudgetLimit(req.user.id),
+        this.userService.getDailyBudgetLimit(req.user.id),
+      ])
+
       const now = new Date()
+      const transactions = await this.paymentService.getUserTransactions(req.user.id, 1000)
+      const completedPurchases = transactions.filter(
+        (t) => t.paymentStatus === 'completed' && t.cost !== null && t.type === 'purchase'
+      )
+
+      // Monthly: current spend this month
       const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
       const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999)
-      
-      const transactions = await this.paymentService.getUserTransactions(req.user.id, 1000) // Get more transactions to ensure we have all monthly ones
-      const monthlyTransactions = transactions.filter((t) => {
+      const monthlyTransactions = completedPurchases.filter((t) => {
         const createdAt = new Date(t.createdAt)
-        return createdAt >= startOfMonth && createdAt <= endOfMonth && 
-               t.paymentStatus === 'completed' && t.cost !== null && t.type === 'purchase'
+        return createdAt >= startOfMonth && createdAt <= endOfMonth
       })
-      
-      const currentSpend = monthlyTransactions.reduce((sum: number, t) => {
-        return sum + (t.cost || 0)
-      }, 0)
+      const monthlySpend = monthlyTransactions.reduce((sum: number, t) => sum + (t.cost || 0), 0)
+      const monthlyResetDate = new Date(now.getFullYear(), now.getMonth() + 1, 1)
 
-      // Calculate reset date (first day of next month)
-      const resetDate = new Date(now.getFullYear(), now.getMonth() + 1, 1)
+      // Daily: current spend today
+      const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+      const endOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999)
+      const dailyTransactions = completedPurchases.filter((t) => {
+        const createdAt = new Date(t.createdAt)
+        return createdAt >= startOfDay && createdAt <= endOfDay
+      })
+      const dailySpend = dailyTransactions.reduce((sum: number, t) => sum + (t.cost || 0), 0)
+      const dailyResetDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1)
 
       res.json({
         success: true,
         data: {
-          current: Number(currentSpend.toFixed(2)),
-          limit: limit ? Number(limit) : null,
-          resetDate: resetDate.toISOString(),
+          monthly: {
+            current: Number(monthlySpend.toFixed(2)),
+            limit: monthlyLimit ? Number(monthlyLimit) : null,
+            resetDate: monthlyResetDate.toISOString(),
+          },
+          daily: {
+            current: Number(dailySpend.toFixed(2)),
+            limit: dailyLimit ? Number(dailyLimit) : null,
+            resetDate: dailyResetDate.toISOString(),
+          },
         },
       })
     } catch (error) {
@@ -525,17 +541,33 @@ export class UserController {
         return
       }
 
-      const { limit } = req.body
+      const { limit, dailyLimit } = req.body
 
       if (limit !== null && limit !== undefined && (typeof limit !== 'number' || limit < 0)) {
         res.status(400).json({
           success: false,
-          error: 'Budget limit must be a positive number or null',
+          error: 'Monthly budget limit must be a positive number or null',
+        })
+        return
+      }
+      if (dailyLimit !== null && dailyLimit !== undefined && (typeof dailyLimit !== 'number' || dailyLimit < 0)) {
+        res.status(400).json({
+          success: false,
+          error: 'Daily budget limit must be a positive number or null',
         })
         return
       }
 
-      await this.userService.updateMonthlyBudgetLimit(req.user.id, limit === undefined ? null : limit)
+      const updates: Promise<void>[] = []
+      if (limit !== undefined) {
+        updates.push(this.userService.updateMonthlyBudgetLimit(req.user.id, limit === null ? null : limit))
+      }
+      if (dailyLimit !== undefined) {
+        updates.push(this.userService.updateDailyBudgetLimit(req.user.id, dailyLimit === null ? null : dailyLimit))
+      }
+      if (updates.length > 0) {
+        await Promise.all(updates)
+      }
 
       res.json({
         success: true,

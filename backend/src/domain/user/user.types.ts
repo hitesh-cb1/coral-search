@@ -15,6 +15,7 @@ export interface User {
   tokenBalance: number
   stripeCustomerId?: string | null
   monthlyBudgetLimit?: number | null
+  dailyBudgetLimit?: number | null
   createdAt: Date
   updatedAt: Date
 }
@@ -49,6 +50,7 @@ export interface UpdateUserInput {
   awsId?: string
   stripeCustomerId?: string | null
   monthlyBudgetLimit?: number | null
+  dailyBudgetLimit?: number | null
   tokenBalance?: bigint
 }
 

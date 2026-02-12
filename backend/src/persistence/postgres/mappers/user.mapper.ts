@@ -18,6 +18,7 @@ export class UserMapper {
       tokenBalance: Number(prismaUser.tokenBalance), // Convert BigInt to number
       stripeCustomerId: prismaUser.stripeCustomerId || null,
       monthlyBudgetLimit: prismaUser.monthlyBudgetLimit ? Number(prismaUser.monthlyBudgetLimit) : null,
+      dailyBudgetLimit: prismaUser.dailyBudgetLimit ? Number(prismaUser.dailyBudgetLimit) : null,
       createdAt: prismaUser.createdAt,
       updatedAt: prismaUser.updatedAt,
     }

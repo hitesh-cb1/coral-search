@@ -113,6 +113,7 @@ export class AdminController {
             tokenBalance: user.tokenBalance.toString(), // Convert BigInt to string
             stripeCustomerId: user.stripeCustomerId,
             monthlyBudgetLimit: user.monthlyBudgetLimit?.toString() || null,
+            dailyBudgetLimit: user.dailyBudgetLimit?.toString() || null,
             googleId: user.googleId ? 'Linked' : null,
             awsId: user.awsId ? 'Linked' : null,
             apiKeyCount: apiKeys.length,

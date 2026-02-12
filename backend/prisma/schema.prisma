@@ -40,8 +40,9 @@ model User {
   // Stripe Integration
   stripeCustomerId String? @unique // Stripe Customer ID for payment methods
   
-  // Monthly Budget Settings
-  monthlyBudgetLimit Decimal? // Monthly spending limit in USD (null = unlimited)
+  // Budget Settings (USD, null = unlimited)
+  monthlyBudgetLimit Decimal? // Monthly spending limit
+  dailyBudgetLimit   Decimal? // Daily spending limit
   
   // Relations
   apiKeys     ApiKey[]

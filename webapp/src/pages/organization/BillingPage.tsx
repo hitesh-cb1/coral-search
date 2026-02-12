@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { hasJwtToken, clearAllTokens } from '../../lib/tokenStorage'
-import { apiGet, apiPost, apiDelete } from '../../lib/apiClient'
+import { apiGet, apiPost, apiPut, apiDelete } from '../../lib/apiClient'
 import { endpoints } from '../../config/endpoints'
 import { OrganizationLayout } from '../../components/common/OrganizationLayout'
 
@@ -17,6 +17,16 @@ export function BillingPage() {
   const [profileError, setProfileError] = useState<string>('')
   const [paymentLoading, setPaymentLoading] = useState(false)
   const [paymentError, setPaymentError] = useState<string>('')
+
+  // Daily budget state
+  const [dailyBudget, setDailyBudget] = useState({
+    current: 0,
+    limit: null as number | null,
+    resetDate: new Date(Date.now() + 86400000).toISOString(),
+  })
+  const [budgetLoading, setBudgetLoading] = useState(false)
+  const [showDailyBudgetEdit, setShowDailyBudgetEdit] = useState(false)
+  const [dailyBudgetEditValue, setDailyBudgetEditValue] = useState('')
 
   // Transactions state
   const [transactions, setTransactions] = useState<any[]>([])
@@ -45,6 +55,7 @@ export function BillingPage() {
     // Fetch user profile to get token balance
     if (hasJwtToken()) {
       loadUserProfile()
+      loadBudget()
       loadTransactions()
       loadPaymentMethods()
     }
@@ -110,6 +121,7 @@ export function BillingPage() {
       } else if (response.data?.success) {
         // Payment verified and processed, reload profile to get updated token balance
         await loadUserProfile()
+        await loadBudget()
         await loadTransactions() // Reload transactions to show new purchase
         await loadPaymentMethods() // Reload payment methods in case a new one was saved
         setPaymentError('')
@@ -123,6 +135,64 @@ export function BillingPage() {
       setPaymentLoading(false)
     }
   }
+
+  const loadBudget = async () => {
+    try {
+      setBudgetLoading(true)
+      const response = await apiGet(endpoints.budget.get())
+      if (response.data?.data?.daily) {
+        const d = response.data.data.daily
+        setDailyBudget({
+          current: d.current ?? 0,
+          limit: d.limit ?? null,
+          resetDate: d.resetDate ?? new Date(Date.now() + 86400000).toISOString(),
+        })
+      }
+    } catch (error) {
+      console.error('Failed to load budget:', error)
+    } finally {
+      setBudgetLoading(false)
+    }
+  }
+
+  const handleUpdateDailyBudget = async () => {
+    try {
+      setBudgetLoading(true)
+      const dailyLimit = dailyBudgetEditValue === '' ? null : parseFloat(dailyBudgetEditValue)
+      if (dailyLimit !== null && (isNaN(dailyLimit) || dailyLimit < 0)) {
+        alert('Please enter a valid positive number')
+        setBudgetLoading(false)
+        return
+      }
+      const response = await apiPut(endpoints.budget.update(), { dailyLimit })
+      if (response.error) {
+        alert(response.error || 'Failed to update daily budget')
+      } else {
+        await loadBudget()
+        setShowDailyBudgetEdit(false)
+        setDailyBudgetEditValue('')
+      }
+    } catch (error) {
+      console.error('Error updating daily budget:', error)
+      alert(error instanceof Error ? error.message : 'Failed to update daily budget')
+    } finally {
+      setBudgetLoading(false)
+    }
+  }
+
+  const hoursUntilDailyReset = (resetDate: string) => {
+    const reset = new Date(resetDate)
+    const now = new Date()
+    const diffMs = reset.getTime() - now.getTime()
+    const hours = Math.max(0, Math.ceil(diffMs / (1000 * 60 * 60)))
+    if (hours < 24) return `Resets in ${hours} hour${hours !== 1 ? 's' : ''}`
+    const days = Math.ceil(hours / 24)
+    return `Resets in ${days} day${days !== 1 ? 's' : ''}`
+  }
+
+  const dailyBudgetPercentage = dailyBudget.limit !== null && dailyBudget.limit > 0
+    ? (dailyBudget.current / dailyBudget.limit) * 100
+    : 0
 
   const fetchUserProfile = async () => {
     setProfileLoading(true)
@@ -436,6 +506,100 @@ export function BillingPage() {
                     <div className="text-sm text-[rgb(75,85,99)]">
                       Redirecting to payment...
                     </div>
+                  )}
+                </section>
+
+                {/* Daily Budget Section */}
+                <section className="rounded-lg border border-zinc-300 bg-white p-6">
+                  <h2 className="mb-4 text-xl font-semibold text-[rgb(55,65,81)]">Daily Budget</h2>
+                  {budgetLoading ? (
+                    <div className="text-sm text-[rgb(75,85,99)]">Loading budget...</div>
+                  ) : (
+                    <>
+                      <div className="mb-4">
+                        <div className="mb-2 text-sm font-medium text-[rgb(75,85,99)]">
+                          Spend today
+                        </div>
+                        <div className="text-2xl font-bold text-[rgb(55,65,81)]">
+                          ${dailyBudget.current.toFixed(2)}
+                          {dailyBudget.limit !== null ? ` / $${dailyBudget.limit.toFixed(2)}` : ''}
+                        </div>
+                      </div>
+                      {dailyBudget.limit !== null && (
+                        <div className="mb-3 h-2 w-full rounded-full bg-zinc-200">
+                          <div
+                            className="h-full rounded-full bg-gradient-to-r from-[#c23d3d] to-[#e15a3a] transition-all"
+                            style={{ width: `${Math.min(dailyBudgetPercentage, 100)}%` }}
+                          />
+                        </div>
+                      )}
+                      <div className="text-sm text-[rgb(75,85,99)]">
+                        {dailyBudget.limit !== null ? (
+                          <>
+                            {hoursUntilDailyReset(dailyBudget.resetDate)}.{' '}
+                            <button
+                              onClick={() => {
+                                setShowDailyBudgetEdit(true)
+                                setDailyBudgetEditValue(dailyBudget.limit?.toString() || '')
+                              }}
+                              className="text-[#c23d3d] hover:text-[#e15a3a] font-medium"
+                            >
+                              Edit budget
+                            </button>
+                          </>
+                        ) : (
+                          <>
+                            No daily limit set.{' '}
+                            <button
+                              onClick={() => {
+                                setShowDailyBudgetEdit(true)
+                                setDailyBudgetEditValue('')
+                              }}
+                              className="text-[#c23d3d] hover:text-[#e15a3a] font-medium"
+                            >
+                              Set daily budget
+                            </button>
+                          </>
+                        )}
+                      </div>
+                      {showDailyBudgetEdit && (
+                        <div className="mt-4 rounded-lg border border-zinc-300 bg-zinc-50 p-4">
+                          <div className="mb-3">
+                            <label className="mb-1 block text-sm font-medium text-[rgb(55,65,81)]">
+                              Daily Budget Limit ($)
+                            </label>
+                            <input
+                              type="number"
+                              min="0"
+                              step="0.01"
+                              value={dailyBudgetEditValue}
+                              onChange={(e) => setDailyBudgetEditValue(e.target.value)}
+                              placeholder="Enter amount or leave empty for no limit"
+                              className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm focus:border-[rgb(55,65,81)] focus:outline-none"
+                            />
+                          </div>
+                          <div className="flex gap-2">
+                            <button
+                              onClick={handleUpdateDailyBudget}
+                              disabled={budgetLoading}
+                              className="rounded-lg border border-[rgb(55,65,81)] bg-[rgb(55,65,81)] px-4 py-2 text-sm font-medium text-white hover:brightness-110 transition-colors disabled:opacity-50"
+                            >
+                              Save
+                            </button>
+                            <button
+                              onClick={() => {
+                                setShowDailyBudgetEdit(false)
+                                setDailyBudgetEditValue('')
+                              }}
+                              disabled={budgetLoading}
+                              className="rounded-lg border border-zinc-300 bg-white px-4 py-2 text-sm font-medium text-[rgb(55,65,81)] hover:bg-zinc-50 transition-colors disabled:opacity-50"
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </>
                   )}
                 </section>
 

@@ -21,6 +21,8 @@ export interface IUserRepository {
   // Budget management
   getMonthlyBudgetLimit(userId: number): Promise<number | null>
   updateMonthlyBudgetLimit(userId: number, limit: number | null): Promise<void>
+  getDailyBudgetLimit(userId: number): Promise<number | null>
+  updateDailyBudgetLimit(userId: number, limit: number | null): Promise<void>
 
   // Stripe Customer management
   updateStripeCustomerId(userId: number, stripeCustomerId: string): Promise<void>

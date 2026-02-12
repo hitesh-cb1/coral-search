@@ -330,6 +330,17 @@ export class UserService {
     await this.userRepository.updateMonthlyBudgetLimit(userId, limit)
   }
 
+  async getDailyBudgetLimit(userId: number): Promise<number | null> {
+    return this.userRepository.getDailyBudgetLimit(userId)
+  }
+
+  async updateDailyBudgetLimit(userId: number, limit: number | null): Promise<void> {
+    if (limit !== null && limit < 0) {
+      throw new ValidationError('Daily budget limit must be a positive number')
+    }
+    await this.userRepository.updateDailyBudgetLimit(userId, limit)
+  }
+
   private async validateRegistrationInput(input: RegisterInput): Promise<void> {
     // Email validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/

@@ -86,6 +86,7 @@ export class PostgresUserRepository implements IUserRepository {
         awsId: input.awsId,
         stripeCustomerId: input.stripeCustomerId,
         monthlyBudgetLimit: input.monthlyBudgetLimit,
+        dailyBudgetLimit: input.dailyBudgetLimit,
         tokenBalance: input.tokenBalance,
       },
     })
@@ -156,6 +157,23 @@ export class PostgresUserRepository implements IUserRepository {
       where: { id: userId },
       data: {
         monthlyBudgetLimit: limit,
+      },
+    })
+  }
+
+  async getDailyBudgetLimit(userId: number): Promise<number | null> {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { dailyBudgetLimit: true },
+    })
+    return user?.dailyBudgetLimit ? Number(user.dailyBudgetLimit) : null
+  }
+
+  async updateDailyBudgetLimit(userId: number, limit: number | null): Promise<void> {
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        dailyBudgetLimit: limit,
       },
     })
   }
