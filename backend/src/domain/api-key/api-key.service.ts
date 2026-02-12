@@ -1,5 +1,4 @@
 import crypto from 'crypto'
-import bcrypt from 'bcryptjs'
 import { IApiKeyRepository } from './api-key.repository.interface'
 import { IUsageRepository } from './usage.repository.interface'
 import { 
@@ -30,8 +29,7 @@ export class ApiKeyService {
     
     // Generate secure API key
     const secretKey = this.generateSecretKey()
-    // Use bcrypt for hash validation (more secure than simple hash)
-    const keyHash = await this.hashKey(secretKey)
+    const keyHash = this.hashKey(secretKey)
     const keyPrefix = secretKey.substring(0, 8)
     
     // Encrypt the full key for storage
@@ -94,7 +92,7 @@ export class ApiKeyService {
     
     // Generate new secret key
     const secretKey = this.generateSecretKey()
-    const keyHash = await this.hashKey(secretKey)
+    const keyHash = this.hashKey(secretKey)
     const keyPrefix = secretKey.substring(0, 8)
     
     // Encrypt the new key
@@ -202,36 +200,13 @@ export class ApiKeyService {
     return authConfig.apiKey.prefix + randomString
   }
 
-  private async findApiKeyBySecret(secretKey: string): Promise<ApiKey | null> {
-    // Get the prefix to narrow down search
-    const keyPrefix = secretKey.substring(0, 8)
-    
-    // Find all keys with this prefix
-    const keysWithPrefix = await this.apiKeyRepository.findByKeyPrefix(keyPrefix)
-    
-    // Verify hash for each key
-    for (const key of keysWithPrefix) {
-      // Get the stored hash for this key
-      const storedHash = await this.apiKeyRepository.getKeyHash(key.id)
-      if (!storedHash) continue
-      
-      // Verify the hash matches using bcrypt
-      const isValid = await this.verifyKeyHash(secretKey, storedHash)
-      if (isValid) {
-        return key
-      }
-    }
-    
-    return null
+  private findApiKeyBySecret(secretKey: string): Promise<ApiKey | null> {
+    const keyHash = this.hashKey(secretKey)
+    return this.apiKeyRepository.findByKeyHash(keyHash)
   }
 
-  private async hashKey(key: string): Promise<string> {
-    // Use bcrypt for secure hashing (similar to password hashing)
-    const saltRounds = 10
-    return bcrypt.hash(key, saltRounds)
-  }
-
-  private async verifyKeyHash(key: string, hash: string): Promise<boolean> {
-    return bcrypt.compare(key, hash)
+  /** SHA-256 hash of the key (hex). Stored in keyHash for fast lookup during auth. */
+  private hashKey(key: string): string {
+    return crypto.createHash('sha256').update(key, 'utf8').digest('hex')
   }
 }

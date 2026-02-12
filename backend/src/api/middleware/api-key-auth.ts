@@ -1,5 +1,4 @@
 import { Request, Response, NextFunction } from 'express'
-import bcrypt from 'bcryptjs'
 import { getApiKeyService } from '../../bootstrap/services'
 import { ValidationError } from '../../shared/errors/app-error'
 
