@@ -235,13 +235,6 @@ export function ContactPage() {
             </p>
           </div>
         </div>
-
-        {/* Trust signal box */}
-        <div className="mt-8 rounded-xl border-2 border-orange-200 bg-orange-50 p-6">
-          <p className="text-sm font-medium text-orange-900 text-center">
-            Built for high-recall product retrieval with sub-50 ms tail latency at production scale.
-          </p>
-        </div>
       </main>
 
       <Footer />
