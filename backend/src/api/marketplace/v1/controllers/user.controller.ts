@@ -190,7 +190,7 @@ export class UserController {
         return
       }
 
-      const apiKeys = await this.apiKeyService.getApiKeysByUser(req.user.id)
+      const apiKeys = await this.apiKeyService.getApiKeysByUserWithUsageCounts(req.user.id)
       const includeSecrets = req.query.includeSecrets === 'true' // Optional query param
 
       // If includeSecrets is true, fetch full keys for each

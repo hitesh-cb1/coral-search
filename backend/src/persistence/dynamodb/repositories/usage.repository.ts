@@ -246,5 +246,9 @@ export class DynamoDBUsageRepository implements IUsageRepository {
     console.log(`[DynamoDB] Daily usage breakdown:`, dailyUsage)
     return dailyUsage
   }
+
+  async getRequestCountsByKeyPrefixForUser(_userId: number): Promise<Record<string, number>> {
+    return {}
+  }
 }
 

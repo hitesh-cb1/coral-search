@@ -54,6 +54,16 @@ export class ApiKeyService {
     return this.apiKeyRepository.findByUserId(userId)
   }
 
+  /** Returns API keys with usageCount from usage_events (so "calls" reflect real usage). */
+  async getApiKeysByUserWithUsageCounts(userId: number): Promise<ApiKey[]> {
+    const keys = await this.apiKeyRepository.findByUserId(userId)
+    const countsByPrefix = await this.usageRepository.getRequestCountsByKeyPrefixForUser(userId)
+    return keys.map((key) => ({
+      ...key,
+      usageCount: countsByPrefix[key.keyPrefix] ?? key.usageCount,
+    }))
+  }
+
   async validateApiKey(key: string): Promise<ApiKey> {
     if (!key.startsWith(authConfig.apiKey.prefix)) {
       throw new ValidationError('Invalid API key format')

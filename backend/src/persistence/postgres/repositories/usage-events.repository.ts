@@ -208,4 +208,19 @@ export class PostgresUsageEventsRepository implements IUsageRepository {
       requests: Number(r.requests),
     }))
   }
+
+  async getRequestCountsByKeyPrefixForUser(userId: number): Promise<Record<string, number>> {
+    const accountId = String(userId)
+    const rows = await this.prisma.$queryRaw<{ api_key_prefix: string; cnt: bigint }[]>`
+      SELECT api_key_prefix, COUNT(*)::bigint AS cnt
+      FROM usage_events
+      WHERE account_id = ${accountId}
+      GROUP BY api_key_prefix
+    `
+    const out: Record<string, number> = {}
+    for (const r of rows) {
+      out[r.api_key_prefix] = Number(r.cnt)
+    }
+    return out
+  }
 }

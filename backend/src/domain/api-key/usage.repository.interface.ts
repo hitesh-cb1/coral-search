@@ -18,5 +18,8 @@ export interface IUsageRepository {
     tokens: number
     requests: number
   }>>
+
+  /** Request count per api_key_prefix for a user (from usage_events). Used to show calls on API keys list. */
+  getRequestCountsByKeyPrefixForUser(userId: number): Promise<Record<string, number>>
 }
 
