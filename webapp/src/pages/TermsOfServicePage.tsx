@@ -291,9 +291,6 @@ export function TermsOfServicePage() {
             </div>
 
             <nav className="flex flex-wrap items-center gap-x-8 gap-y-3 text-sm">
-              <Link to="/" className="text-zinc-600 hover:text-zinc-900 transition-colors">
-                Playground
-              </Link>
               <Link to="/compare" className="text-zinc-600 hover:text-zinc-900 transition-colors">
                 Compare
               </Link>
