@@ -1,11 +1,14 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { Logo } from '../components/common/Logo'
 import { Footer } from '../components/common/Footer'
+import { ProfileNav } from '../components/common/ProfileNav'
 import { apiPost } from '../lib/apiClient'
 import { endpoints } from '../config/endpoints'
+import { hasJwtToken } from '../lib/tokenStorage'
 
 export function ContactPage() {
+  const [isLoggedIn, setIsLoggedIn] = useState(false)
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [company, setCompany] = useState('')
@@ -15,6 +18,18 @@ export function ContactPage() {
   const [sending, setSending] = useState(false)
   const [success, setSuccess] = useState(false)
   const [error, setError] = useState('')
+
+  useEffect(() => {
+    setIsLoggedIn(hasJwtToken())
+    const handleStorageChange = () => setIsLoggedIn(hasJwtToken())
+    const handleFocus = () => setIsLoggedIn(hasJwtToken())
+    window.addEventListener('storage', handleStorageChange)
+    window.addEventListener('focus', handleFocus)
+    return () => {
+      window.removeEventListener('storage', handleStorageChange)
+      window.removeEventListener('focus', handleFocus)
+    }
+  }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -66,16 +81,25 @@ export function ContactPage() {
             <Link to="/">
               <Logo />
             </Link>
-            <div className="flex items-center gap-4">
-              <Link to="/" className="px-4 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-50 rounded-lg transition-colors">
-                Playground
-              </Link>
-              <Link to="/docs" className="px-4 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-50 rounded-lg transition-colors">
-                Documentation
-              </Link>
-              <Link to="/pricing" className="px-4 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-50 rounded-lg transition-colors">
-                Pricing
-              </Link>
+            <div className="flex items-center gap-3">
+              {!isLoggedIn ? (
+                <>
+                  <Link
+                    to="/register"
+                    className="px-4 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-50 rounded-lg transition-colors"
+                  >
+                    Sign up
+                  </Link>
+                  <Link
+                    to="/login"
+                    className="rounded-lg bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800 transition-colors"
+                  >
+                    Log in
+                  </Link>
+                </>
+              ) : (
+                <ProfileNav />
+              )}
             </div>
           </div>
         </div>
