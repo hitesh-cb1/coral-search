@@ -158,6 +158,22 @@ model CreditTransaction {
   @@map("credit_transactions")
 }
 
+// Contact form submissions (saved for records; email still sent)
+model ContactSubmission {
+  id        Int      @id @default(autoincrement())
+  name      String
+  email     String
+  company   String?
+  topic     String?
+  role      String?
+  message   String   @db.Text
+  createdAt DateTime @default(now())
+
+  @@index([email])
+  @@index([createdAt])
+  @@map("contact_submissions")
+}
+
 // Existing Shopify Models (keeping them)
 model ShopifyShop {
   id          Int                 @id @default(autoincrement())
