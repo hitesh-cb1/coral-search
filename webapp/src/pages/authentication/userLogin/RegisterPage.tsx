@@ -125,7 +125,7 @@ export function RegisterPage() {
           </label>
 
           <div className="space-y-4">
-            <div className="w-full">
+            <div className={`w-full ${!isConsentChecked ? 'pointer-events-none opacity-50' : ''}`}>
               <GoogleLogin
                 onSuccess={handleGoogleSuccess}
                 onError={handleGoogleError}
@@ -141,7 +141,8 @@ export function RegisterPage() {
 
             <button
               type="button"
-              className="w-full flex items-center justify-center gap-3 px-4 py-3 rounded-lg border border-zinc-300 bg-white text-sm font-medium text-zinc-700 hover:bg-zinc-50 transition-colors"
+              disabled={!isConsentChecked}
+              className="w-full flex items-center justify-center gap-3 px-4 py-3 rounded-lg border border-zinc-300 bg-white text-sm font-medium text-zinc-700 hover:bg-zinc-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-white"
               onClick={handleEmailButtonClick}
             >
               <EmailIcon className="h-5 w-5" />
