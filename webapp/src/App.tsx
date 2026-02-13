@@ -585,13 +585,13 @@ function App() {
               <div className="mt-10 flex flex-wrap justify-center gap-4">
                 <Link
                   to="/pricing"
-                  className="inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-[#c23d3d] to-[#e15a3a] px-8 py-4 text-base font-semibold text-white hover:shadow-lg transition-all duration-200"
+                  className="inline-flex items-center justify-center rounded-xl border-2 border-zinc-300 bg-white px-8 py-4 text-base font-semibold text-zinc-700 hover:bg-zinc-50 transition-colors"
                 >
                   View pricing
                 </Link>
                 <Link
                   to="/contact"
-                  className="inline-flex items-center justify-center rounded-xl border-2 border-zinc-300 bg-white px-8 py-4 text-base font-semibold text-zinc-700 hover:bg-zinc-50 transition-colors"
+                  className="inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-[#c23d3d] to-[#e15a3a] px-8 py-4 text-base font-semibold text-white hover:shadow-lg transition-all duration-200"
                 >
                   Talk to us
                 </Link>
@@ -680,13 +680,13 @@ function App() {
                   element.scrollIntoView({ behavior: 'smooth' })
                 }
               }}
-              className="inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-[#c23d3d] to-[#e15a3a] px-8 py-4 text-base font-semibold text-white hover:shadow-lg transition-all duration-200"
+              className="inline-flex items-center justify-center rounded-xl border-2 border-zinc-300 bg-white px-8 py-4 text-base font-semibold text-zinc-700 hover:bg-zinc-50 transition-colors"
             >
               Run a live request
             </button>
             <Link
               to="/compare"
-              className="inline-flex items-center justify-center rounded-xl border-2 border-zinc-300 bg-white px-8 py-4 text-base font-semibold text-zinc-700 hover:bg-zinc-50 transition-colors"
+              className="inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-[#c23d3d] to-[#e15a3a] px-8 py-4 text-base font-semibold text-white hover:shadow-lg transition-all duration-200"
             >
               View benchmarks
             </Link>
@@ -1055,13 +1055,13 @@ function App() {
             <div className="flex flex-wrap justify-center gap-4 mt-8">
               <Link
                 to="/register"
-                className="inline-flex items-center justify-center rounded-xl bg-white px-8 py-4 text-base font-semibold text-[#c23d3d] hover:bg-zinc-50 transition-all duration-200 shadow-lg hover:shadow-xl"
+                className="inline-flex items-center justify-center rounded-xl border-2 border-white bg-transparent px-8 py-4 text-base font-semibold text-white hover:bg-white/10 transition-colors"
               >
                 Create Account
               </Link>
               <Link
                 to="/contact"
-                className="inline-flex items-center justify-center rounded-xl border-2 border-white bg-transparent px-8 py-4 text-base font-semibold text-white hover:bg-white/10 transition-colors"
+                className="inline-flex items-center justify-center rounded-xl bg-white px-8 py-4 text-base font-semibold text-[#c23d3d] hover:bg-zinc-50 transition-all duration-200 shadow-lg hover:shadow-xl"
               >
                 Talk to us
               </Link>
