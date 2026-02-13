@@ -237,8 +237,8 @@ export function ApiKeyManagement() {
             tokenBalance: user.tokenBalance || 0,
           })
         }
-        if (user?.isVerified !== undefined) {
-          setIsVerified(Boolean(user.isVerified))
+        if (user?.isVerified !== undefined || user?.emailVerified !== undefined) {
+          setIsVerified(Boolean(user?.isVerified || user?.emailVerified))
         }
         if (data?.rateLimits) {
           setRateLimits({
