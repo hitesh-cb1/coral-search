@@ -140,7 +140,7 @@ export function PricingPage() {
           </div>
 
           {/* Enterprise */}
-          <div className="rounded-2xl border-2 border-zinc-300 bg-gradient-to-br from-zinc-50 to-white p-8 shadow-sm flex flex-col">
+          <div className="rounded-2xl border-2 border-slate-500 bg-gradient-to-br from-zinc-50 to-white p-8 shadow-sm flex flex-col">
             <div className="mb-6">
               <h3 className="text-2xl font-bold text-zinc-900 mb-2">Enterprise</h3>
               <p className="text-sm text-zinc-600 mb-4">
@@ -188,7 +188,7 @@ export function PricingPage() {
             <div className="mt-auto">
               <Link
                 to="/contact"
-                className="block w-full rounded-lg border-2 border-zinc-300 bg-white px-6 py-3 text-center text-sm font-semibold text-zinc-900 hover:bg-zinc-50 transition-colors"
+                className="block w-full rounded-lg border-2 border-slate-500 bg-white px-6 py-3 text-center text-sm font-semibold text-zinc-900 hover:bg-slate-50 transition-colors"
               >
                 Talk to us
               </Link>
