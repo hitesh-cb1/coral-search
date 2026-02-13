@@ -215,6 +215,31 @@ export class UserService {
           emailVerified: googleUserInfo.email_verified, // Google's verification status (for reference)
           // Keep existing isVerified status - don't auto-verify
         })
+      } else if (input.guestUserId) {
+        // Claim guest account with Google identity (same flow as email signup with guest key)
+        const guestUser = await this.userRepository.findById(input.guestUserId)
+        if (guestUser) {
+          user = await this.userRepository.update(input.guestUserId, {
+            email: googleUserInfo.email.toLowerCase().trim(),
+            googleId: googleUserInfo.id,
+            firstName: googleUserInfo.given_name,
+            lastName: googleUserInfo.family_name,
+            emailVerified: googleUserInfo.email_verified,
+            isVerified: false,
+            // Preserve token balance and any other guest state
+          })
+        } else {
+          // Guest user not found, create new user
+          user = await this.userRepository.create({
+            email: googleUserInfo.email.toLowerCase().trim(),
+            googleId: googleUserInfo.id,
+            firstName: googleUserInfo.given_name,
+            lastName: googleUserInfo.family_name,
+            emailVerified: googleUserInfo.email_verified,
+            isVerified: false,
+            tokenBalance: freemiumConfig.freeTier.initialTokens,
+          })
+        }
       } else {
         // Create new user with Google account and free tier tokens
         // Note: emailVerified from Google is just for reference, isVerified must be set via email verification link

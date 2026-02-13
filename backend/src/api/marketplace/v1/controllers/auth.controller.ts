@@ -157,7 +157,7 @@ export class AuthController {
 
   googleLogin = async (req: Request, res: Response): Promise<void> => {
     try {
-      const { idToken } = req.body
+      const { idToken, guestApiKey } = req.body
 
       if (!idToken) {
         res.status(400).json({
@@ -167,7 +167,20 @@ export class AuthController {
         return
       }
 
-      const result = await this.userService.googleLogin({ idToken })
+      let guestUserId: number | undefined
+      if (guestApiKey && typeof guestApiKey === 'string') {
+        try {
+          const apiKey = await this.apiKeyService.validateApiKey(guestApiKey)
+          if (apiKey) {
+            guestUserId = apiKey.userId
+            logger.info(`Linking guest user ${guestUserId} during Google sign-in`)
+          }
+        } catch (error) {
+          logger.warn('Failed to validate guest API key during Google sign-in:', error)
+        }
+      }
+
+      const result = await this.userService.googleLogin({ idToken, guestUserId })
 
       res.json({
         success: true,

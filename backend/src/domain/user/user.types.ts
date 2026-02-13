@@ -82,4 +82,6 @@ export interface RegisterInput {
 // Google OAuth types
 export interface GoogleLoginInput {
   idToken: string
+  /** When provided, claim this guest user with Google identity instead of creating a new user */
+  guestUserId?: number
 }
