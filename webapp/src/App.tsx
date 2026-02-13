@@ -46,39 +46,49 @@ function validateJson(jsonString: string): { valid: boolean; error?: string } {
 
 function buildEmbeddingsPayload(state: PlaygroundState): Record<string, unknown> {
   if (state.task === 'product') {
-    // Build product_offering object
     const product_offering: Record<string, unknown> = {}
-
     if (state.product.title) product_offering.title = state.product.title
     if (state.product.description) product_offering.description = state.product.description
     if (state.product.category) product_offering.category = state.product.category
     if (state.product.brand) product_offering.brand = state.product.brand
     if (state.product.color) product_offering.color = state.product.color
-    if (state.product.bullets) {
-      // Send bullets as string (backend will handle conversion to array if needed)
-      product_offering.bullets = state.product.bullets
-    }
+    if (state.product.bullets) product_offering.bullets = state.product.bullets
     if (state.product.attributes) {
       try {
         product_offering.attributes = JSON.parse(state.product.attributes)
       } catch {
-        // If invalid JSON, skip it (error should be shown in UI)
+        // skip invalid JSON
       }
     }
-
     return {
-      product_offering,
-      output_data_type: 'float32',
+      input: [product_offering],
+      model: 'coral_embed',
       task: state.task,
     }
   }
-
-  // Query task - use text input
   return {
-    text: state.text.trim(),
-    output_data_type: 'float32',
+    input: [state.text.trim()],
+    model: 'coral_embed',
     task: state.task,
   }
+}
+
+function parseLatencyFromResponse(res: Response): number | null {
+  const debugInfo = res.headers.get('X-Debug-Info') || res.headers.get('x-debug-info')
+  if (debugInfo) {
+    try {
+      const parsed = JSON.parse(debugInfo)
+      if (typeof parsed.latency_ms === 'number') return parsed.latency_ms
+    } catch {
+      // ignore
+    }
+  }
+  const ms = res.headers.get('X-latency-ms') || res.headers.get('x-latency-ms')
+  if (ms) {
+    const n = parseInt(ms, 10)
+    if (!isNaN(n)) return n
+  }
+  return null
 }
 
 function buildCurlCommand(args: {
@@ -87,15 +97,14 @@ function buildCurlCommand(args: {
   payload: Record<string, unknown>
 }): string {
   const apiKey = args.apiKey?.trim() ? args.apiKey.trim() : '<YOUR_API_KEY>'
-  const body = JSON.stringify(args.payload, null, 2)
+  const bodySingleLine = JSON.stringify(args.payload).replace(/'/g, "'\\''")
 
   return [
-    `curl ${args.endpoint} \\`,
+    `curl -i -X POST ${args.endpoint} \\`,
     `  -H "Content-Type: application/json" \\`,
     `  -H "Authorization: Bearer ${apiKey}" \\`,
-    `  -d @- <<'EOF'`,
-    body,
-    `EOF`,
+    `  -H "X-Debug: true" \\`,
+    `  -d '${bodySingleLine}'`,
   ].join('\n')
 }
 
@@ -379,13 +388,12 @@ function App() {
     setIsLoading(true)
     const startTime = Date.now()
     try {
-      // Call embeddings API with task parameter
       const res = await fetch(FETCH_ENDPOINT_EMBED, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${apiKey}`,
-          'X-get-latency': 'true',
+          'X-Debug': 'true',
         },
         body: JSON.stringify(payload),
       })
@@ -401,9 +409,7 @@ function App() {
       }
 
       if (!res.ok) {
-        // Use server-side latency from response header if available, otherwise calculate client-side
-        const latencyHeader = res.headers.get('X-latency-ms')
-        const latencyValue = latencyHeader ? parseInt(latencyHeader, 10) : (Date.now() - startTime)
+        const latencyValue = parseLatencyFromResponse(res) ?? (Date.now() - startTime)
         setLatency(latencyValue)
         // Handle CoralBricks-specific error codes
         if (data.error?.includes('Insufficient token balance')) {
@@ -424,20 +430,12 @@ function App() {
         return
       }
 
-      // Display response (OpenAI-compatible format)
-      if (data.object === 'list' && data.data) {
-        // Store token count from response if available
-        if (data.usage?.total_tokens) {
-          storeTokenCount(data.usage.total_tokens)
-        }
-        // Use server-side latency from response header if available, otherwise from body, otherwise calculate client-side
-        const latencyHeader = res.headers.get('X-latency-ms')
-        const latencyValue = latencyHeader ? parseInt(latencyHeader, 10) : (data.latency_ms || (Date.now() - startTime))
-        setLatency(latencyValue)
-        setResponseText(JSON.stringify(data, null, 2))
-      } else {
-        setResponseText(JSON.stringify(data, null, 2))
+      if (data.usage?.total_tokens) {
+        storeTokenCount(data.usage.total_tokens)
       }
+      const latencyValue = parseLatencyFromResponse(res) ?? data.latency_ms ?? (Date.now() - startTime)
+      setLatency(latencyValue)
+      setResponseText(JSON.stringify(data, null, 2))
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e)
       setError(msg)

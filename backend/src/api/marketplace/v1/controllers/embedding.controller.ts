@@ -34,16 +34,35 @@ export class EmbeddingController {
         return
       }
 
-      const { text, product_offering, output_data_type, task } = req.body
+      const { text, product_offering, input: inputArray, output_data_type, task } = req.body
 
-      // Determine task type - use 'task' parameter or infer from input
+      // Support OpenAI-style body: input (array of strings), model, task
+      let resolvedText: string | undefined
+      let resolvedProductOffering: Record<string, unknown> | undefined
       let taskType: 'query' | 'product' = task
-      if (!taskType) {
-        // Infer from input: if product_offering exists, it's product; otherwise query
-        taskType = product_offering ? 'product' : 'query'
+
+      if (Array.isArray(inputArray) && inputArray.length > 0) {
+        // New format: input array + task
+        if (!taskType) taskType = 'query'
+        if (taskType === 'query') {
+          resolvedText = typeof inputArray[0] === 'string' ? inputArray[0] : String(inputArray[0])
+        } else {
+          try {
+            const parsed = typeof inputArray[0] === 'string' ? JSON.parse(inputArray[0]) : inputArray[0]
+            if (parsed && typeof parsed === 'object' && parsed.title) {
+              resolvedProductOffering = parsed
+            }
+          } catch {
+            // ignore
+          }
+        }
+      } else {
+        // Legacy format: text or product_offering
+        if (!taskType) taskType = product_offering ? 'product' : 'query'
+        if (taskType === 'query') resolvedText = text
+        else resolvedProductOffering = product_offering
       }
 
-      // Validate task
       const validTasks = ['query', 'product']
       if (!validTasks.includes(taskType)) {
         res.status(400).json({ 
@@ -53,26 +72,23 @@ export class EmbeddingController {
         return
       }
 
-      // Validate input based on task type
       if (taskType === 'query') {
-        if (!text || typeof text !== 'string') {
+        if (!resolvedText || typeof resolvedText !== 'string') {
           res.status(400).json({ 
             success: false, 
-            error: 'Text input is required and must be a string for query task' 
+            error: 'Text input is required. Use "input": ["your text"] for query task.' 
           })
           return
         }
       } else {
-        // Product task
-        if (!product_offering || typeof product_offering !== 'object') {
+        if (!resolvedProductOffering || typeof resolvedProductOffering !== 'object') {
           res.status(400).json({ 
             success: false, 
-            error: 'Product offering is required and must be an object for product task' 
+            error: 'Product offering is required. Use "input": [{"title":"..."}] for product task.' 
           })
           return
         }
-
-        if (!product_offering.title) {
+        if (!resolvedProductOffering.title) {
           res.status(400).json({ 
             success: false, 
             error: 'Product title is required' 
@@ -94,14 +110,16 @@ export class EmbeddingController {
       // Default to float32 if not provided
       const finalOutputDataType = output_data_type || 'float32'
 
-      // Estimate token usage before making the call
+      const textForQuery = resolvedText!
+      const productForCommerce = resolvedProductOffering!
+
       let estimatedTokens: number
       let inputSize: number
       if (taskType === 'query') {
-        estimatedTokens = Math.ceil(text.length / 4)
-        inputSize = text.length
+        estimatedTokens = Math.ceil(textForQuery.length / 4)
+        inputSize = textForQuery.length
       } else {
-        const productText = JSON.stringify(product_offering)
+        const productText = JSON.stringify(productForCommerce)
         estimatedTokens = Math.ceil(productText.length / 4)
         inputSize = productText.length
       }
@@ -110,17 +128,16 @@ export class EmbeddingController {
       // Validate account-level token balance (must happen before embedding call)
       await this.userService.validateTokenBalance(req.apiKey!.userId, estimatedTokens)
 
-      // Call appropriate embedding service based on task type
       let result
       if (taskType === 'query') {
         result = await this.embeddingClient.embed({
-          text,
+          text: textForQuery,
           output_data_type: finalOutputDataType,
           downstream_task: taskType,
         })
       } else {
         result = await this.embeddingClient.embedCommerce({
-          product_offering,
+          product_offering: productForCommerce,
           output_data_type: finalOutputDataType,
           downstream_task: taskType,
         })
@@ -128,19 +145,15 @@ export class EmbeddingController {
 
       const latency = Date.now() - startTime
 
-      // Transform embeddings (fast operation)
+      // OpenAI-style response: data array with index and embedding (no object fields)
       const transformedData = result.embeddings.map((embedding, index) => ({
-        object: 'embedding' as const,
-        embedding,
         index,
+        embedding,
       }))
 
-      // Check if client requested latency in headers
-      const shouldReturnLatencyInHeader = req.headers['x-get-latency'] === 'true'
+      const useDebugHeader = req.headers['x-debug'] === 'true' || req.headers['x-get-latency'] === 'true'
 
-      // Prepare response
       const responseData: Record<string, unknown> = {
-        object: 'list',
         data: transformedData,
         model: result.model,
         usage: {
@@ -149,14 +162,9 @@ export class EmbeddingController {
         },
       }
 
-      // Only include latency_ms in body if header was not requested (backward compatibility)
-      // If header was requested, latency will be in response headers instead
-      if (!shouldReturnLatencyInHeader) {
-        responseData.latency_ms = latency
-      }
-
-      // Set latency in response header if requested
-      if (shouldReturnLatencyInHeader) {
+      if (useDebugHeader) {
+        res.setHeader('X-Debug-Info', JSON.stringify({ latency_ms: Math.round(latency * 100) / 100 }))
+      } else {
         res.setHeader('X-latency-ms', latency.toString())
       }
 
@@ -198,10 +206,12 @@ export class EmbeddingController {
         res.setHeader('X-latency-ms', latency.toString())
       }
       
-      // Log failed usage asynchronously (don't block error response)
       if (req.apiKey) {
-        const inputSize = req.body?.text?.length || 
-          (req.body?.product_offering ? JSON.stringify(req.body.product_offering).length : 0)
+        const body = req.body || {}
+        const firstInput = Array.isArray(body.input) ? body.input[0] : undefined
+        const inputSize = body.text?.length ??
+          (typeof firstInput === 'string' ? firstInput.length : firstInput ? JSON.stringify(firstInput).length : 0) ??
+          (body.product_offering ? JSON.stringify(body.product_offering).length : 0)
         
         this.apiKeyService.logUsage({
           userId: req.apiKey.userId,

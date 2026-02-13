@@ -39,9 +39,9 @@ export const endpoints = {
     usage: (id: string) => getApiUrl(`marketplace/v1/user/api-keys/${id}/usage`),
   },
 
-  // Embeddings endpoints (direct API calls)
+  // Embeddings endpoints (OpenAI-style: /v1/embeddings)
   embeddings: {
-    embed: () => getApiUrl('api/v1/embeddings'),
+    embed: () => getApiUrl('v1/embeddings'),
   },
 
   // Usage endpoints

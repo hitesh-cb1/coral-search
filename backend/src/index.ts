@@ -19,8 +19,8 @@ app.use(cors({
   origin: true, // Allow all origins for development
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-get-latency'],
-  exposedHeaders: ['X-latency-ms']
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-get-latency', 'X-Debug'],
+  exposedHeaders: ['X-latency-ms', 'X-Debug-Info']
 }))
 
 // Global middleware
@@ -58,7 +58,8 @@ app.get('/', (_req, res) => {
 app.use('/', publicRoutes)                    // Legacy Shopify routes
 app.use('/internal', internalRoutes)          // Internal/admin routes
 app.use('/marketplace', marketplaceRoutes)    // Marketplace user management
-app.use('/api', embeddingRoutes)              // Main embedding APIs
+app.use('/api', embeddingRoutes)              // Main embedding APIs (legacy path)
+app.use('/', embeddingRoutes)                 // OpenAI-style path: /v1/embeddings
 app.use('/webhooks/shopify', shopifyWebhookRoutes) // Webhooks
 
 // Error handling (must be last)
