@@ -4,12 +4,13 @@ import { GoogleLogin } from '@react-oauth/google'
 import type { CredentialResponse } from '@react-oauth/google'
 import { apiPost } from '../../../lib/apiClient'
 import { endpoints } from '../../../config/endpoints'
-import { storeJwtToken, hasJwtToken, removeApiKey } from '../../../lib/tokenStorage'
+import { storeJwtToken, hasJwtToken, removeApiKey, getApiKey } from '../../../lib/tokenStorage'
 import { EmailLoginForm } from './EmailLoginForm'
 import { Logo } from '../../../components/common/Logo'
 
 export function LoginPage() {
   const navigate = useNavigate()
+  const guestApiKey = getApiKey()
   const [isConsentChecked, setIsConsentChecked] = useState(false)
   const [showEmailForm, setShowEmailForm] = useState(false)
   const [googleMessage, setGoogleMessage] = useState('')
@@ -44,7 +45,10 @@ export function LoginPage() {
 
     setGoogleMessage('')
     try {
-      const response = await apiPost(endpoints.auth.google(), { idToken })
+      const response = await apiPost(endpoints.auth.google(), {
+        idToken,
+        guestApiKey: guestApiKey || undefined,
+      })
       if (response.error) {
         setGoogleMessage(response.error || 'Google sign-in failed. Please try again.')
         return
