@@ -198,7 +198,7 @@ export function ApiKeyManagement() {
         const data = response.data?.data?.apiKey || response.data?.apiKey || response.data
         if (data?.secretKey) {
           copyToClipboard(data.secretKey)
-          setRevealedKeys((prev) => ({ ...prev, [id]: data.secretKey }))
+          // Do not reveal the key in the UI when only copying
         } else {
           setError('Could not retrieve API key.')
         }
