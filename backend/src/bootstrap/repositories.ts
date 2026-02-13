@@ -4,7 +4,7 @@ import { PostgresProductRepository } from '../persistence/postgres/repositories/
 import { PostgresUserRepository } from '../persistence/postgres/repositories/user.repository'
 import { PostgresApiKeyRepository } from '../persistence/postgres/repositories/api-key.repository'
 import { PostgresPaymentRepository } from '../persistence/postgres/repositories/payment.repository'
-import { DynamoDBUsageRepository } from '../persistence/dynamodb/repositories/usage.repository'
+import { PostgresUsageEventsRepository } from '../persistence/postgres/repositories/usage-events.repository'
 import { IShopRepository } from '../domain/shop/shop.repository.interface'
 import { IProductRepository } from '../domain/product/product.repository.interface'
 import { IUserRepository } from '../domain/user/user.repository.interface'
@@ -57,7 +57,7 @@ export function getPaymentRepository(): IPaymentRepository {
 
 export function getUsageRepository(): IUsageRepository {
   if (!usageRepositoryInstance) {
-    usageRepositoryInstance = new DynamoDBUsageRepository()
+    usageRepositoryInstance = new PostgresUsageEventsRepository(getApiKeyRepository())
   }
   return usageRepositoryInstance
 }
