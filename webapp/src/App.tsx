@@ -108,7 +108,8 @@ function buildCurlCommand(args: {
   ].join('\n')
 }
 
-const FETCH_ENDPOINT_EMBED = endpoints.embeddings.embed()
+// Playground always calls production embeddings API
+const FETCH_ENDPOINT_EMBED = 'https://api.coralbricks.ai/v1/embeddings'
 
 const TASKS: Array<{ value: DownstreamTask; label: string }> = [
   { value: 'query', label: 'Query' },
