@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { endpoints } from '../../config/endpoints'
 import { apiGet, apiPost } from '../../lib/apiClient'
@@ -47,6 +47,17 @@ export function ApiKeyManagement() {
   const [newlyCreatedKey, setNewlyCreatedKey] = useState<string>('')
   const [revealedKeys, setRevealedKeys] = useState<Record<string, string>>({})
   const [loadingRevealId, setLoadingRevealId] = useState<string | null>(null)
+  const apiKeyNameInputRef = useRef<HTMLInputElement>(null)
+
+  // Scroll to API key name input when create form is opened
+  useEffect(() => {
+    if (showNewKey && apiKeyNameInputRef.current) {
+      const timer = setTimeout(() => {
+        apiKeyNameInputRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      }, 100)
+      return () => clearTimeout(timer)
+    }
+  }, [showNewKey])
 
   // Check if user is authenticated
   useEffect(() => {
@@ -421,6 +432,7 @@ export function ApiKeyManagement() {
                   API Key Name
                 </label>
                 <input
+                  ref={apiKeyNameInputRef}
                   type="text"
                   value={newKeyName}
                   onChange={(e) => setNewKeyName(e.target.value)}
