@@ -10,7 +10,6 @@ import { shopifyWebhookRoutes } from './webhooks/shopify/routes'
 import { requestLogger } from './api/middleware/request-logger'
 import { errorHandler } from './api/middleware/error-handler'
 import { logger } from './infrastructure/logging/logger'
-import { initializeDynamoDBTables } from './persistence/dynamodb/setup'
 
 const app = express()
 
@@ -68,13 +67,6 @@ app.use(errorHandler)
 // Use PORT from environment (required for AWS, Heroku, etc.)
 const PORT = parseInt(process.env.PORT || '3000', 10)
 const HOST = process.env.HOST || '0.0.0.0'
-
-// Initialize DynamoDB tables in the background (non-blocking)
-initializeDynamoDBTables().catch((error) => {
-  logger.error('Failed to initialize DynamoDB tables:', error)
-  // Continue even if DynamoDB initialization fails
-  // In production, tables should be created via infrastructure-as-code
-})
 
 // Start server
 const server = app.listen(PORT, HOST, () => {

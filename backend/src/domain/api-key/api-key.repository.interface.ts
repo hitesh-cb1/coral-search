@@ -20,5 +20,5 @@ export interface IApiKeyRepository {
   // Update rate limits for all API keys belonging to a user
   updateRateLimitsForUser(userId: number, requestsPerSecond: number, tokensPerMonth: bigint): Promise<void>
   
-  // Note: Detailed usage logging is now handled by IUsageRepository (DynamoDB)
+  // Note: Usage analytics are read from usage_events (Postgres) via IUsageRepository
 }

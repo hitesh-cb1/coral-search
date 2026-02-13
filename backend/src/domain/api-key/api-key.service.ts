@@ -153,8 +153,7 @@ export class ApiKeyService {
   async logUsage(input: CreateUsageInput): Promise<ApiKeyUsage> {
     // Increment usage count in PostgreSQL (for quick analytics)
     await this.apiKeyRepository.incrementUsage(input.apiKeyId)
-    
-    // Log detailed usage to DynamoDB (for scalable analytics and history)
+    // Usage events are written by the client's server (api.coralbricks.ai); our createUsage is a no-op
     return this.usageRepository.createUsage(input)
   }
 

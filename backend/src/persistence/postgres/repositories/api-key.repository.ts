@@ -215,5 +215,5 @@ export class PostgresApiKeyRepository implements IApiKeyRepository {
     })
   }
 
-  // Usage logging methods removed - now handled by DynamoDB via IUsageRepository
+  // Detailed usage is read from usage_events (written by client's server) via IUsageRepository
 }
